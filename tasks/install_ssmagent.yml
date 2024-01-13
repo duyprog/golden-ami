@@ -1,0 +1,78 @@
+---
+- name: Install AWS System Manager if amazonlinux2
+  command: "{{ item }}"
+  with_items:
+    - sudo systemctl start amazon-ssm-agent
+  tags:
+    - amazonlinux2
+
+
+- name: Install AWS System Manager if Centos 7 and Centos Stream 9
+  command: "{{ item }}"
+  args:
+    chdir: /tmp
+  with_items:
+    - sudo yum -y install https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
+    - sudo systemctl start amazon-ssm-agent
+  tags:
+    - centos7
+    - centosstream9
+
+- name: Install AWS System Manager if Ubuntu 22
+  become: true
+  become_user: root
+  command: "{{ item }}"
+  with_items:
+    - sudo snap install amazon-ssm-agent --classic
+    - sudo snap list amazon-ssm-agent
+    - sudo snap start amazon-ssm-agent
+    - sudo snap services amazon-ssm-agent
+  tags:
+    - ubuntu22
+
+
+- name: Install AWS System Manager if Redhat 9
+  become: true 
+  become_user: root
+  command: "{{ item }}"
+  with_items:
+    - sudo dnf install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
+    - sudo systemctl enable amazon-ssm-agent
+    - sudo systemctl start amazon-ssm-agent
+  tags:
+    - redhat9
+
+
+- name: Debian sub-tasks Creates directory for install SSM
+  file:
+    path: /tmp/ssm
+    state: directory
+    mode: '0755'
+  tags:
+    - debian12
+
+
+- name: Install AWS System Manager if Debian
+  become: true 
+  become_user: root
+  command: "{{ item }}"
+  args:
+    chdir: /tmp/ssm
+  with_items:
+    - wget -q https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/debian_amd64/amazon-ssm-agent.deb
+    - sudo dpkg -i amazon-ssm-agent.deb
+    - sudo systemctl enable amazon-ssm-agent
+    - sudo systemctl start amazon-ssm-agent
+  tags:
+    - debian12
+
+
+- name: Check SSM agent status
+  command: "{{ item }}"
+  with_items:
+    - ssm-cli get-diagnostics --output table
+  tags:
+    - amazonlinux2
+    - centos7
+    - centosstream9
+    - debian12

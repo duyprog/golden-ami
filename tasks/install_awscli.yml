@@ -1,0 +1,21 @@
+---
+- name: Install AWSCLI for linux
+  command: "{{ item }}"
+  with_items:
+    - 'curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" -s'
+    - 'unzip -q awscliv2.zip'
+    - './aws/install'
+  tags:
+    - amazonlinux2
+    - centos7
+    - centosstream9
+    - debian12
+    - redhat9
+    - ubuntu22
+
+- name: Check AWSCLI version
+  command: "{{ item }}"
+  with_items:
+    - aws --version
+  tags:
+    - always

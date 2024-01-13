@@ -1,0 +1,33 @@
+--- 
+- name: Install packages for Golden AMI
+  hosts: all 
+  become: true 
+  vars_files: 
+    - packages.yml
+  vars:
+    - os_name: ubuntu22 
+  tasks:
+    - name: Update and upgrade apt package 
+      apt: 
+        update_cache: yes 
+        upgrade: yes
+        cache_valid_time: 86400
+      tags: 
+        - always
+    - name: Install the packages
+      apt: 
+        name: "{{ item }}"
+        state: present 
+      loop: "{{ packages }}"
+      tags: 
+        - always
+    - name: Install AWS CLI 
+      include_tasks:
+        file: ../tasks/install_awscli.yml
+      tags: 
+        - "{{ os_name }}"
+    - name: Install SSM Agent 
+      include_tasks: 
+        file: ../tasks/install_ssmagent.yml
+      tags: 
+        - "{{ os_name }}"
