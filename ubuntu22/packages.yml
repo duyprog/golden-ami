@@ -2,3 +2,4 @@ packages:
  - curl
  - wget
  - unzip
+ - vim
