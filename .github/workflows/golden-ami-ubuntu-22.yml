@@ -32,6 +32,7 @@ jobs:
         working-directory: ./ubuntu22
         run: packer init . 
       - name: Validate Packer
+        working-directory: ./ubuntu22
         run: packer validate . 
       - name: Config AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4 
@@ -39,4 +40,6 @@ jobs:
           role-to-assume: arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/${{ env.AWS_ROLE }}
           aws-region: ${{ env.AWS_REGION }}
       - name: Build Packer
+        working-directory: ./ubuntu22
         run: packer build . 
+      
