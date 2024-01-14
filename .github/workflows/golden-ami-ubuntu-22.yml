@@ -9,7 +9,7 @@ env:
   AWS_REGION: "ap-southeast-1"
   AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
   AWS_ROLE: ${{ secrets.AWS_ROLE }}
-
+  SG_ID: "sg-046ba3f40685fee25"
 permissions: 
   id-token: write
   contents: read
@@ -21,25 +21,57 @@ jobs:
     steps:
       - name: Checkout 
         uses: actions/checkout@v4
-      - name: Install Packer
-        run: |
-          curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
-          sudo apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
-          sudo apt-get update && sudo apt-get install packer
+
+      - name: Setup Packer 
+        uses: hashicorp/setup-packer@main
+        id: setup 
+        with: 
+          version: latest
+
       - name: Check Packer version
-        run: packer version 
+        run: packer version
+        id: version
+         
       - name: Init Packer 
         working-directory: ./ubuntu22
-        run: packer init . 
+        id: init
+        run: packer init .
+         
       - name: Validate Packer
         working-directory: ./ubuntu22
+        id: validate
         run: packer validate . 
+
       - name: Config AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4 
         with: 
           role-to-assume: arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/${{ env.AWS_ROLE }}
           aws-region: ${{ env.AWS_REGION }}
+
+      - name: Get Github Actions public IPv4
+        id: ip 
+        uses: haythem/public-ip@v1.3
+
+      - name: Add Github Actions public IPv4 to Security Group 
+        run: |
+          aws ec2 authorize-security-group-ingress --group-id ${{ env.SG_ID }} --protocol tcp --port 22 --cidr ${{ steps.ip.outputs.ipv4 }}/32
+
       - name: Build Packer
         working-directory: ./ubuntu22
-        run: packer build . 
-      
+        id: build
+        run: packer build -color=false .
+
+      - name: Remove Github Actions public IPv4 from Security Group 
+        run: |
+          aws ec2 revoke-security-group-ingress --group-id ${{ env.SG_ID }} --protocol tcp --port 22 --cidr ${{ steps.ip.outputs.ipv4 }}/32
+
+      - name: Packer manifest
+        working-directory: ./ubuntu22
+        continue-on-error: true
+        run: |
+          cat manifest.json
+          
+      - name: Pipeline status check 
+        if: ${{ steps.build.outcome == 'failure' }}
+        run: |
+          exit 1  
