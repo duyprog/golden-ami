@@ -7,8 +7,8 @@ on:
       - develop 
 env:
   AWS_REGION: "ap-southeast-1"
-  # AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
-  # AWS_ROLE: ${{ secrets.AWS_ROLE }}
+  AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+  AWS_ROLE: ${{ secrets.AWS_ROLE }}
 
 permissions: 
   id-token: write
@@ -21,3 +21,22 @@ jobs:
     steps:
       - name: Checkout 
         uses: actions/checkout@v4
+      - name: Install Packer
+        run: |
+          curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
+          sudo apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
+          sudo apt-get update && sudo apt-get install packer
+      - name: Check Packer version
+        run: packer version 
+      - name: Init Packer 
+        working-directory: ./ubuntu22
+        run: packer init . 
+      - name: Validate Packer
+        run: packer validate . 
+      - name: Config AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4 
+        with: 
+          role-to-assume: arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/${{ env.AWS_ROLE }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Build Packer
+        run: packer build . 
