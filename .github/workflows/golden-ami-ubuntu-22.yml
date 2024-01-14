@@ -1,0 +1,23 @@
+name: Build Golden AMI by Packer 
+
+on:
+  push: 
+    branches:
+      - master 
+      - develop 
+env:
+  AWS_REGION: "ap-southeast-1"
+  # AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+  # AWS_ROLE: ${{ secrets.AWS_ROLE }}
+
+permissions: 
+  id-token: write
+  contents: read
+
+jobs: 
+  packer:
+    runs-on: ubuntu-latest
+    name: Build Packer
+    steps:
+      - name: Checkout 
+        uses: actions/checkout@v4
